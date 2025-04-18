@@ -1,16 +1,21 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-
+const genAI = new GoogleGenerativeAI("AIzaSyANBo-oHX55PdZq4056Qvx9B-qQC8r-n4E");
 
 export async function POST(req: Request) {
   try {
     const { image } = await req.json();
 
+    if (!image?.inlineData?.data) {
+      throw new Error("No image data provided");
+    }
+
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash",
-    })
+    });
+
+    // Remove the data URL prefix if it exists
+    const base64Data = image.inlineData.data.replace(/^data:image\/\w+;base64,/, '');
 
     const prompt = `Analyze this food image and provide detailed nutritional information in the following JSON format:
     {
@@ -44,27 +49,37 @@ export async function POST(req: Request) {
           "Whether it's vegetarian/vegan/gluten-free if applicable"
         ]
       }
-    }
-    
-    Ensure the response is in valid JSON format exactly as specified above, without any markdown formatting.
-    Provide realistic estimates based on typical portion sizes and nutritional databases.
-    Be as specific and accurate as possible in identifying the food and its components.
-    Make sure to calculate both portion-based and per 100g nutritional values for easy comparison.`;
+    }`;
 
+    const parts = [
+      { text: prompt },
+      {
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Data
+        }
+      }
+    ];
 
-    const response = await model.generateContent([prompt, image]);
+    const result = await model.generateContent(parts);
+    const response = await result.response;
+    const text = response.text();
 
     return Response.json({
-      response: response.response.text(),
+      response: text,
       status: 200,
-      message: "Image analyzed successfully",
-    })
+      message: "Image analyzed successfully"
+    });
   } catch (err) {
+    console.error("Analysis error:", err);
     return Response.json({
       response: null,
       status: 500,
       message: "Error analyzing image",
-      error: err
-    })
+      error: {
+        message: err instanceof Error ? err.message : "Unknown error",
+        stack: err instanceof Error ? err.stack : undefined
+      }
+    });
   }
 }
