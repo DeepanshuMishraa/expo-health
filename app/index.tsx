@@ -3,42 +3,39 @@ import React, { useState } from 'react'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
-import axios from 'axios'
+import { useAnalysisStore } from '@/stores/useAnalysisStore'
 
 const index = () => {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false);
+  const setAnalysis = useAnalysisStore((state) => state.setAnalysis);
 
   const captureImage = async (camera = false) => {
     let result;
 
     try {
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.5,
+        base64: true,
+        allowsEditing: true,
+        aspect: [4, 3] as [number, number],
+      };
+
       if (camera) {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
           alert('Sorry, we need camera permissions to make this work!');
           return;
         }
-
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 0.8,
-          base64: true,
-          allowsEditing: true,
-        });
+        result = await ImagePicker.launchCameraAsync(options);
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
           alert('Sorry, we need camera roll permissions to make this work!');
           return;
         }
-
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 0.8,
-          base64: true,
-          allowsEditing: true,
-        });
+        result = await ImagePicker.launchImageLibraryAsync(options);
       }
 
       if (!result.canceled && result.assets[0].base64) {
@@ -52,7 +49,7 @@ const index = () => {
             body: JSON.stringify({
               image: {
                 inlineData: {
-                  data: `data:image/jpeg;base64,${result.assets[0].base64}`,
+                  data: result.assets[0].base64,
                   mimeType: "image/jpeg",
                 }
               }
@@ -62,11 +59,37 @@ const index = () => {
           const data = await response.json();
 
           if (data.status === 200) {
-            console.log("Analysis successful:", data.response);
-            router.push("/analysis");
+            // Clean up the response text and attempt to parse it
+            const cleanText = data.response
+              .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
+              .replace(/\\n/g, '') // Remove newlines
+              .trim(); // Remove extra whitespace
+
+            try {
+              // First try parsing the text directly
+              const analysisData = JSON.parse(cleanText);
+              setAnalysis(analysisData.foodAnalysis);
+              router.push("/analysis");
+            } catch (parseError) {
+              // If direct parsing fails, try to extract JSON from the text
+              const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                try {
+                  const extractedJson = JSON.parse(jsonMatch[0]);
+                  setAnalysis(extractedJson.foodAnalysis);
+                  router.push("/analysis");
+                } catch (secondaryError) {
+                  console.error("Error parsing extracted JSON:", secondaryError);
+                  alert("Error processing analysis results. Please try again.");
+                }
+              } else {
+                console.error("Error parsing analysis:", parseError);
+                alert("Error processing analysis results. Please try again.");
+              }
+            }
           } else {
             console.error("Analysis failed:", data.message);
-            alert("Failed to analyze image. Please try again.");
+            alert("Failed to analyze image. Please try again with a clearer photo.");
           }
         } catch (error) {
           console.error("Error uploading image:", error);

@@ -3,36 +3,22 @@ import React from 'react'
 import { ThemedText } from '@/components/ThemedText'
 import { ThemedView } from '@/components/ThemedView'
 import { Collapsible } from '@/components/Collapsible'
+import { useAnalysisStore } from '@/stores/useAnalysisStore'
+import { useRouter } from 'expo-router'
 
 const Analysis = () => {
-  // We'll implement state management for the analysis data later
-  const dummyData = {
-    foodAnalysis: {
-      identifiedFood: "Loading...",
-      portionSize: "0",
-      recognizedServingSize: "0",
-      nutritionFactsPerPortion: {
-        calories: "0",
-        protein: "0",
-        carbs: "0",
-        fat: "0",
-        fiber: "0",
-        sugar: "0",
-        sodium: "0",
-        cholesterol: "0"
-      },
-      nutritionFactsPer100g: {
-        calories: "0",
-        protein: "0",
-        carbs: "0",
-        fat: "0",
-        fiber: "0",
-        sugar: "0",
-        sodium: "0",
-        cholesterol: "0"
-      },
-      additionalNotes: []
+  const analysis = useAnalysisStore((state) => state.analysis)
+  const router = useRouter()
+
+  // Redirect to home if no analysis data
+  React.useEffect(() => {
+    if (!analysis) {
+      router.push('/')
     }
+  }, [analysis])
+
+  if (!analysis) {
+    return null;
   }
 
   const renderNutritionFacts = (facts: any, title: string) => (
@@ -79,36 +65,36 @@ const Analysis = () => {
     <ScrollView style={styles.container}>
       <ThemedView style={styles.content}>
         <ThemedText type="title" style={styles.foodTitle}>
-          {dummyData.foodAnalysis.identifiedFood}
+          {analysis.identifiedFood}
         </ThemedText>
 
         <View style={styles.servingInfo}>
           <ThemedText>
-            Portion Size: {dummyData.foodAnalysis.portionSize}g
+            Portion Size: {analysis.portionSize}g
           </ThemedText>
           <ThemedText>
-            Serving Size: {dummyData.foodAnalysis.recognizedServingSize}g
+            Serving Size: {analysis.recognizedServingSize}g
           </ThemedText>
         </View>
 
         <Collapsible title="Nutrition Facts (Per Portion)">
           {renderNutritionFacts(
-            dummyData.foodAnalysis.nutritionFactsPerPortion,
+            analysis.nutritionFactsPerPortion,
             "Per Portion"
           )}
         </Collapsible>
 
         <Collapsible title="Nutrition Facts (Per 100g)">
           {renderNutritionFacts(
-            dummyData.foodAnalysis.nutritionFactsPer100g,
+            analysis.nutritionFactsPer100g,
             "Per 100g"
           )}
         </Collapsible>
 
-        {dummyData.foodAnalysis.additionalNotes.length > 0 && (
+        {analysis.additionalNotes.length > 0 && (
           <View style={styles.notes}>
             <ThemedText type="subtitle">Additional Notes</ThemedText>
-            {dummyData.foodAnalysis.additionalNotes.map((note, index) => (
+            {analysis.additionalNotes.map((note, index) => (
               <ThemedText key={index} style={styles.note}>
                 • {note}
               </ThemedText>
