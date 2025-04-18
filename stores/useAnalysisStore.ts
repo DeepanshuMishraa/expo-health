@@ -22,12 +22,16 @@ export interface FoodAnalysis {
 
 interface AnalysisStore {
   analysis: FoodAnalysis | null;
+  imageUri: string | null;
   setAnalysis: (analysis: FoodAnalysis) => void;
+  setImageUri: (uri: string) => void;
   clearAnalysis: () => void;
 }
 
 export const useAnalysisStore = create<AnalysisStore>((set) => ({
   analysis: null,
+  imageUri: null,
   setAnalysis: (analysis) => set({ analysis }),
-  clearAnalysis: () => set({ analysis: null }),
+  setImageUri: (uri) => set({ imageUri: uri }),
+  clearAnalysis: () => set({ analysis: null, imageUri: null }),
 }))
