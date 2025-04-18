@@ -1,3 +1,3 @@
 ## Health Tracker somewhat like Cal ai
 
-### 50% built using vibe coding
+### UI built with VIBE CODING

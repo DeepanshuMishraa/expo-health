@@ -26,7 +26,7 @@
       [
         "expo-router",
         {
-          "origin": "https://healthtracker.com"
+          "origin": "https://calorify.expo.app"
         }
       ],
       [
@@ -41,6 +41,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://healthtracker.com"
+      },
+      "eas": {
+        "projectId": "391f0fba-9bc3-4894-be45-580e442b6ffa"
+      }
     }
   }
 }
